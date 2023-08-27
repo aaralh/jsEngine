@@ -1,4 +1,4 @@
-from .Token import Token, TokenType
+from Token import Token, TokenType
 
 class Scanner():
     def __init__(self, source: str):
@@ -40,7 +40,8 @@ class Scanner():
         self.report(line, "", message)
 
     def error_token(self, message: str) -> None:
-        self.tokens.append(Token(TokenType.ERROR, message, None, self.line))
+        from JavaScript import JavaScript
+        JavaScript.error(self.line, message)
 
     def string(self) -> None:
         while self.peek() != '"' and not self.is_at_end():

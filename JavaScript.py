@@ -15,39 +15,42 @@ class JavaScript():
     @staticmethod
     def error(line: int, message: str) -> None:
         JavaScript.report(line, "", message)
-        JavaScript.has_errpr = True
+        JavaScript.had_error = True
 
-    def read_file(self, path: str) -> str:
+    @staticmethod
+    def read_file(path: str) -> str:
         with open(path, "r") as f:
             return f.read()
 
-    def run(self, source: str) -> None:
+    @staticmethod
+    def run(source: str) -> None:
         scanner = Scanner(source)
         tokens = scanner.scan_tokens()
         for token in tokens:
             print(token)
 
-    def run_file(self, path: str) -> None:
-        file = self.read_file(path)
-        self.run(file)
-        if self.had_error:
+    @staticmethod
+    def run_file(path: str) -> None:
+        file = JavaScript.read_file(path)
+        JavaScript.run(file)
+        if JavaScript.had_error:
             sys.exit(65)
 
-    def run_prompt(self) -> None:
+    @staticmethod
+    def run_prompt() -> None:
         while True:
             line = input("> ")
             if line == "exit()":
                 break
-            self.run(line)
-            self.had_error = False
+            JavaScript.run(line)
+            JavaScript.had_error = False
 
 
 if __name__ == "__main__":
     args = sys.argv
-    js_engine = JavaScript()
-    if len(args) > 1:
+    if len(args) > 2:
         sys.exit(64)
-    elif len(args) == 1:
-        js_engine.run_file(args[0])
+    elif len(args) == 2:
+        JavaScript.run_file(args[1])
     else:
-        js_engine.run_prompt()
+        JavaScript.run_prompt()
