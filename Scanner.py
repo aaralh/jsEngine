@@ -1,4 +1,4 @@
-from Token import Token, TokenType
+from Token import Token, TokenType, KEYWORDS
 
 class Scanner():
     def __init__(self, source: str):
@@ -55,6 +55,27 @@ class Scanner():
         value = self.source[self.start + 1 : self.current - 1]
         self.add_token(TokenType.STRING, value)
 
+    def peek_next(self) -> str:
+        if self.current + 1 >= len(self.source):
+            return "\0"
+        return self.source[self.current + 1]
+
+    def number(self) -> None:
+        while self.peek().isdigit():
+            self.advance()
+        if self.peek() == "." and self.peek_next().isdigit():
+            self.advance()
+            while self.peek().isdigit():
+                self.advance()
+        self.add_token(TokenType.NUMBER, float(self.source[self.start:self.current]))
+
+    def identifier(self) -> None:
+        while self.peek().isalnum():
+            self.advance()
+        text = self.source[self.start:self.current]
+        token_type = TokenType.IDENTIFIER if text not in KEYWORDS else KEYWORDS[text]
+        self.add_token(token_type)
+
     def scan_token(self) -> None:
         c = self.advance()
         if c == "(":
@@ -97,8 +118,19 @@ class Scanner():
             self.line += 1
         elif c == '"':
             self.string()
+        elif c == "|":
+            if self.match("|"):
+                self.add_token(TokenType.OR)
+        elif c == "&":
+            if self.match("&"):
+                self.add_token(TokenType.AND)
         else:
-            self.error(self.line, "Unexpected character.")
+            if c.isdigit():
+                self.number()
+            elif c.isalpha():
+                self.identifier()
+            else:
+                self.error(self.line, "Unexpected character.")
 
     def scan_tokens(self) -> list:
         while not self.is_at_end():

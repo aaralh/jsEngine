@@ -37,7 +37,7 @@ class TokenType(Enum):
     FUN = auto()
     FOR = auto()
     IF = auto()
-    NIL = auto()
+    NULL = auto()
     OR = auto()
     PRINT = auto()
     RETURN = auto()
@@ -48,6 +48,23 @@ class TokenType(Enum):
     WHILE = auto()
 
     EOF = auto()
+
+KEYWORDS = {
+    "class": TokenType.CLASS,
+    "else": TokenType.ELSE,
+    "false": TokenType.FALSE,
+    "for": TokenType.FOR,
+    "function": TokenType.FUN,
+    "if": TokenType.IF,
+    "null": TokenType.NULL,
+    "print": TokenType.PRINT,
+    "return": TokenType.RETURN,
+    "super": TokenType.SUPER,
+    "this": TokenType.THIS,
+    "true": TokenType.TRUE,
+    "var": TokenType.VAR,
+    "while": TokenType.WHILE,
+}
 
 class Token():
     def __init__(self, token_type: TokenType, lexeme: str, literal: object, line: int):
