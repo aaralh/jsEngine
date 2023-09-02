@@ -1,9 +1,10 @@
+from typing import List
 from Token import Token, TokenType, KEYWORDS
 
 class Scanner():
     def __init__(self, source: str):
         self.source = source
-        self.tokens = []
+        self.tokens: List[Token] = []
         self.start = 0
         #Current cursor position
         self.current = 0
