@@ -1,14 +1,21 @@
-from typing import overload
+from typing import List, overload
 from Token import TokenType
-from Expr import Expr, Visitor, Literal, Unary, Binary, Grouping
+import Expr
+import Stmt
 from RuntimeErrorException import RuntimeErrorException
+from Environment import Environment
 
-class Interpreter(Visitor):
-    def visit_literal_expr(self, expr: Literal):
+class Interpreter(Expr.Visitor, Stmt.Visitor):
+    environment = Environment()
+
+    def visit_literal_expr(self, expr: Expr.Literal):
         return expr.value
 
-    def evaluate(self, expr: Expr):
+    def evaluate(self, expr: Expr.Expr):
         return expr.accept(self)
+
+    def execute(self, stmt: Stmt.Stmt):
+        stmt.accept(self)
 
     def is_truthy(self, obj):
         if obj is None:
@@ -27,7 +34,7 @@ class Interpreter(Visitor):
             return
         raise RuntimeErrorException(operator, "Operands must be numbers.")
 
-    def visit_unary_expr(self, expr: Unary):
+    def visit_unary_expr(self, expr: Expr.Unary):
         right = self.evaluate(expr.right)
         if expr.operator.type == TokenType.MINUS:
             self.check_number_operand(expr.operator, right)
@@ -43,7 +50,7 @@ class Interpreter(Visitor):
             return False
         return a == b
 
-    def visit_binary_expr(self, expr: Binary):
+    def visit_binary_expr(self, expr: Expr.Binary):
         left = self.evaluate(expr.left)
         right = self.evaluate(expr.right)
         if expr.operator.type == TokenType.MINUS:
@@ -81,6 +88,30 @@ class Interpreter(Visitor):
 
         return None
 
+    def visit_print_stmt(self, stmt: Stmt.Print):
+        value = self.evaluate(stmt.expression)
+        print(self.stringify(value))
+        return None
+
+    def visit_var_stmt(self, stmt: Stmt.Var):
+        value = None
+        if stmt.initializer is not None:
+            value = self.evaluate(stmt.initializer)
+        self.environment.define(stmt.name.lexeme, value)
+        return None
+
+    def visit_variable_expr(self, expr: Expr.Variable):
+        return self.environment.get(expr.name)
+
+    def visit_assign_expr(self, expr: Expr.Assign):
+        value = self.evaluate(expr.value)
+        self.environment.assign(expr.name, value)
+        return value
+
+    def visit_expression_stmt(self, stmt: Stmt.Expression):
+        self.evaluate(stmt.expression)
+        return None
+
     def stringify(self, obj):
         if obj is None:
             return "null"
@@ -91,9 +122,10 @@ class Interpreter(Visitor):
             return text
         return str(obj)
 
-    def interpret(self, expr: Expr):
+    def interpret(self, statements: List[Stmt.Stmt]):
         try:
-            value = self.evaluate(expr)
-            print(self.stringify(value))
+            for statement in statements:
+                self.execute(statement)
         except RuntimeErrorException as e:
-            print(e.message)
+            from JavaScript import JavaScript
+            JavaScript.runtime_error(e)

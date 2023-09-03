@@ -5,6 +5,9 @@ class Expr:
         return visitor.visit_expr(self)
 
 class Visitor:
+    def visit_assign_expr(self, expr):
+        pass
+
     def visit_binary_expr(self, expr):
         pass
 
@@ -17,8 +20,19 @@ class Visitor:
     def visit_unary_expr(self, expr):
         pass
 
+    def visit_variable_expr(self, expr):
+        pass
+
+class Assign(Expr):
+    def __init__(self, name, value, ):
+        self.name = name
+        self.value = value
+
+    def accept(self, visitor):
+        return visitor.visit_assign_expr(self)
+
 class Binary(Expr):
-    def __init__(self, left, operator, right):
+    def __init__(self, left, operator, right, ):
         self.left = left
         self.operator = operator
         self.right = right
@@ -47,4 +61,11 @@ class Unary(Expr):
 
     def accept(self, visitor):
         return visitor.visit_unary_expr(self)
+
+class Variable(Expr):
+    def __init__(self, name, ):
+        self.name = name
+
+    def accept(self, visitor):
+        return visitor.visit_variable_expr(self)
 

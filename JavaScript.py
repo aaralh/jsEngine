@@ -28,7 +28,8 @@ class JavaScript():
         else:
             JavaScript.report(token.line, f" at '{token.lexeme}'", message)
 
-    def runtime_error(self, error: RuntimeErrorException) -> None:
+    @staticmethod
+    def runtime_error(error: RuntimeErrorException) -> None:
         print(f"{error.message}\n[line {error.token.line}]")
         JavaScript.had_runtime_error = True
 
@@ -47,13 +48,12 @@ class JavaScript():
         scanner = Scanner(source)
         tokens = scanner.scan_tokens()
         parser = Parser(tokens)
-        expression = parser.parse()
+        statements = parser.parse()
 
-        if JavaScript.had_error :
+        if JavaScript.had_error:
             return
 
-        expression = cast(Expr, expression)
-        JavaScript.interpreter.interpret(expression)
+        JavaScript.interpreter.interpret(statements)
 
     @staticmethod
     def run_file(path: str) -> None:
