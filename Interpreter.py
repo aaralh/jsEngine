@@ -17,6 +17,19 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
     def execute(self, stmt: Stmt.Stmt):
         stmt.accept(self)
 
+    def execute_block(self, statements: List[Stmt.Stmt], environment: Environment):
+        previous = self.environment
+        try:
+            self.environment = environment
+            for statement in statements:
+                self.execute(statement)
+        finally:
+            self.environment = previous
+
+    def visit_block_stmt(self, stmt: Stmt.Block):
+        self.execute_block(stmt.statements, Environment(self.environment))
+        return None
+
     def is_truthy(self, obj):
         if obj is None:
             return False
