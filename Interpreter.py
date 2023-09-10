@@ -123,6 +123,11 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
         self.environment.define(stmt.name.lexeme, value)
         return None
 
+    def visit_while_stmt(self, stmt: Stmt.While):
+        while self.is_truthy(self.evaluate(stmt.condition)):
+            self.execute(stmt.body)
+        return None
+
     def visit_variable_expr(self, expr: Expr.Variable):
         return self.environment.get(expr.name)
 

@@ -172,16 +172,56 @@ class Parser:
         return statements
 
     def statement(self) -> Stmt.Stmt:
+        if self.match(TokenType.FOR):
+            return self.for_statement()
+
         if self.match(TokenType.IF):
             return self.if_statement()
 
         if self.match(TokenType.PRINT):
             return self.print_statement()
 
+        if self.match(TokenType.WHILE):
+            return self.while_statement()
+
         if self.match(TokenType.LEFT_BRACE):
             return Stmt.Block(self.block())
 
         return self.expression_statement()
+
+    def for_statement(self) -> Stmt.Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+
+        if self.match(TokenType.SEMICOLON):
+            initializer: Optional[Stmt.Stmt] = None
+        elif self.match(TokenType.VAR):
+            initializer: Stmt.Stmt = self.var_declaration()
+        else:
+            initializer: Stmt.Stmt = self.expression_statement()
+
+        condition: Optional[Expr.Expr] = None
+        if not self.check(TokenType.SEMICOLON):
+            condition = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+        increment: Optional[Expr.Expr] = None
+        if not self.check(TokenType.RIGHT_PAREN):
+            increment = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
+
+        body: Stmt.Stmt = self.statement()
+
+        if increment is not None:
+            body = Stmt.Block([body, Stmt.Expression(increment)])
+
+        if condition is None:
+            condition = Expr.Literal(True)
+        body = Stmt.While(condition, body)
+
+        if initializer is not None:
+            body = Stmt.Block([initializer, body])
+
+        return body
 
     def if_statement(self) -> Stmt.Stmt:
         self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
@@ -204,6 +244,14 @@ class Parser:
 
         self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return Stmt.Var(name, initializer)
+
+    def while_statement(self) -> Stmt.Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+        condition: Expr.Expr = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
+        body: Stmt.Stmt = self.statement()
+
+        return Stmt.While(condition, body)
 
     def declaration(self) -> Optional[Stmt.Stmt]:
         try:
