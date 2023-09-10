@@ -123,7 +123,7 @@ class Parser:
         return Stmt.Expression(expr)
 
     def assignment(self) -> Expr.Expr:
-        expr: Expr.Expr = self.equality()
+        expr: Expr.Expr = self.or_expr()
 
         if self.match(TokenType.EQUAL):
             equals: Token = self.previous()
@@ -134,6 +134,26 @@ class Parser:
                 return Expr.Assign(name, value)
 
             self.error(equals, "Invalid assignment target.")
+
+        return expr
+
+    def or_expr(self) -> Expr.Expr:
+        expr: Expr.Expr = self.and_expr()
+
+        while self.match(TokenType.OR):
+            operator: Token = self.previous()
+            right: Expr.Expr = self.and_expr()
+            expr = Expr.Logical(expr, operator, right)
+
+        return expr
+
+    def and_expr(self) -> Expr.Expr:
+        expr: Expr.Expr = self.equality()
+
+        while self.match(TokenType.AND):
+            operator: Token = self.previous()
+            right: Expr.Expr = self.equality()
+            expr = Expr.Logical(expr, operator, right)
 
         return expr
 
@@ -152,6 +172,9 @@ class Parser:
         return statements
 
     def statement(self) -> Stmt.Stmt:
+        if self.match(TokenType.IF):
+            return self.if_statement()
+
         if self.match(TokenType.PRINT):
             return self.print_statement()
 
@@ -159,6 +182,18 @@ class Parser:
             return Stmt.Block(self.block())
 
         return self.expression_statement()
+
+    def if_statement(self) -> Stmt.Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
+        condition: Expr.Expr = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
+
+        then_branch: Stmt.Stmt = self.statement()
+        else_branch: Optional[Stmt.Stmt] = None
+        if self.match(TokenType.ELSE):
+            else_branch = self.statement()
+
+        return Stmt.If(condition, then_branch, else_branch)
 
     def var_declaration(self) -> Stmt.Stmt:
         name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")

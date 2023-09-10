@@ -73,6 +73,7 @@ if __name__ == '__main__':
         'Binary   : Expr left, Token operator, Expr right',
         'Grouping : Expr expression',
         'Literal  : object value',
+        'Logical  : Expr left, Token operator, Expr right',
         'Unary    : Token operator, Expr right',
         'Variable : Token name',
     ])
@@ -80,6 +81,7 @@ if __name__ == '__main__':
     define_ast(output_dir, 'Stmt', [
         'Block      : List[Stmt] statements',
         'Expression : Expr expression',
+        'If         : Expr condition, Stmt then_branch, Stmt else_branch',
         'Print      : Expr expression',
         'Var        : Token name, Expr initializer',
     ])

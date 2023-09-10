@@ -17,6 +17,9 @@ class Visitor:
     def visit_literal_expr(self, expr):
         pass
 
+    def visit_logical_expr(self, expr):
+        pass
+
     def visit_unary_expr(self, expr):
         pass
 
@@ -53,6 +56,15 @@ class Literal(Expr):
 
     def accept(self, visitor):
         return visitor.visit_literal_expr(self)
+
+class Logical(Expr):
+    def __init__(self, left, operator, right, ):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def accept(self, visitor):
+        return visitor.visit_logical_expr(self)
 
 class Unary(Expr):
     def __init__(self, operator, right, ):

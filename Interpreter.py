@@ -11,6 +11,16 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
     def visit_literal_expr(self, expr: Expr.Literal):
         return expr.value
 
+    def visit_logical_expr(self, expr: Expr.Logical):
+        left = self.evaluate(expr.left)
+        if expr.operator.type == TokenType.OR:
+            if self.is_truthy(left):
+                return left
+        else:
+            if not self.is_truthy(left):
+                return left
+        return self.evaluate(expr.right)
+
     def evaluate(self, expr: Expr.Expr):
         return expr.accept(self)
 
@@ -123,6 +133,13 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
     def visit_expression_stmt(self, stmt: Stmt.Expression):
         self.evaluate(stmt.expression)
+        return None
+
+    def visit_if_stmt(self, stmt: Stmt.If):
+        if self.is_truthy(self.evaluate(stmt.condition)):
+            self.execute(stmt.then_branch)
+        elif stmt.else_branch is not None:
+            self.execute(stmt.else_branch)
         return None
 
     def stringify(self, obj):
