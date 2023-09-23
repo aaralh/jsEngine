@@ -34,7 +34,7 @@ class TokenType(Enum):
     CLASS = auto()
     ELSE = auto()
     FALSE = auto()
-    FUN = auto()
+    FUNCTION = auto()
     FOR = auto()
     IF = auto()
     NULL = auto()
@@ -54,7 +54,7 @@ KEYWORDS = {
     "else": TokenType.ELSE,
     "false": TokenType.FALSE,
     "for": TokenType.FOR,
-    "function": TokenType.FUN,
+    "function": TokenType.FUNCTION,
     "if": TokenType.IF,
     "null": TokenType.NULL,
     "print": TokenType.PRINT,

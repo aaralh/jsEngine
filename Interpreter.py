@@ -1,12 +1,30 @@
-from typing import List, overload
+from typing import List, cast, overload
 from Token import TokenType
 import Expr
 import Stmt
 from RuntimeErrorException import RuntimeErrorException
 from Environment import Environment
+from JSCallable import JSCallable
+from JSFunction import JSFunction
+from Return import Return
+
+class Log(JSCallable):
+    def call(self, interpreter, arguments):
+        for argument in arguments:
+            print(interpreter.stringify(argument))
+        return None
+
+    def arity(self):
+        return 1
 
 class Interpreter(Expr.Visitor, Stmt.Visitor):
-    environment = Environment()
+    _globals = Environment()
+
+    def __init__(self):
+        self.environment = self._globals
+        self.environment.define("console", {
+            "log": Log()
+        })
 
     def visit_literal_expr(self, expr: Expr.Literal):
         return expr.value
@@ -28,9 +46,12 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
         stmt.accept(self)
 
     def execute_block(self, statements: List[Stmt.Stmt], environment: Environment):
+        print(self.environment.values)
+        print(environment.values)
         previous = self.environment
         try:
             self.environment = environment
+            print(self.environment.values)
             for statement in statements:
                 self.execute(statement)
         finally:
@@ -111,10 +132,28 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
         return None
 
+    def visit_call_expr(self, expr: Expr.Call):
+        callee = self.evaluate(expr.callee)
+        arguments = []
+        for argument in expr.arguments:
+            arguments.append(self.evaluate(argument))
+        if not isinstance(callee, JSCallable):
+            raise RuntimeErrorException(expr.paren, "Can only call functions and classes.")
+        function = cast(JSCallable, callee)
+        if len(arguments) != function.arity():
+            raise RuntimeErrorException(expr.paren, f"Expected {function.arity()} arguments but got {len(arguments)}.")
+        return function.call(self, arguments)
+
     def visit_print_stmt(self, stmt: Stmt.Print):
         value = self.evaluate(stmt.expression)
         print(self.stringify(value))
         return None
+
+    def visit_return_stmt(self, stmt: Stmt.Return):
+        value = stmt.value
+        if stmt.value is not None:
+            value = self.evaluate(stmt.value)
+        raise Return(value)
 
     def visit_var_stmt(self, stmt: Stmt.Var):
         value = None
@@ -133,11 +172,17 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
     def visit_assign_expr(self, expr: Expr.Assign):
         value = self.evaluate(expr.value)
+        print("name", expr.name.lexeme)
         self.environment.assign(expr.name, value)
         return value
 
     def visit_expression_stmt(self, stmt: Stmt.Expression):
         self.evaluate(stmt.expression)
+        return None
+
+    def visit_function_stmt(self, stmt: Stmt.Function):
+        function = JSFunction(stmt, self.environment)
+        self.environment.define(stmt.name.lexeme, function)
         return None
 
     def visit_if_stmt(self, stmt: Stmt.If):
