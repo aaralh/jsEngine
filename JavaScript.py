@@ -7,6 +7,7 @@ from Interpreter import Interpreter
 from Parser import Parser
 from RuntimeErrorException import RuntimeErrorException
 from Expr import Expr
+from Resolver import Resolver
 
 class JavaScript():
 
@@ -49,6 +50,12 @@ class JavaScript():
         tokens = scanner.scan_tokens()
         parser = Parser(tokens)
         statements = parser.parse()
+
+        if JavaScript.had_error:
+            return
+
+        resolver = Resolver(JavaScript.interpreter)
+        resolver.resolve(statements)
 
         if JavaScript.had_error:
             return

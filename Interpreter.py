@@ -1,5 +1,5 @@
-from typing import List, cast, overload
-from Token import TokenType
+from typing import List, cast, Dict
+from Token import Token, TokenType
 import Expr
 import Stmt
 from RuntimeErrorException import RuntimeErrorException
@@ -22,6 +22,7 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
     def __init__(self):
         self.environment = self._globals
+        self.locals: Dict[Expr.Expr, int] = {}
         self.environment.define("console", {
             "log": Log()
         })
@@ -45,13 +46,13 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
     def execute(self, stmt: Stmt.Stmt):
         stmt.accept(self)
 
+    def resolve(self, expr: Expr.Expr, depth: int):
+        self.locals[expr] = depth
+
     def execute_block(self, statements: List[Stmt.Stmt], environment: Environment):
-        print(self.environment.values)
-        print(environment.values)
         previous = self.environment
         try:
             self.environment = environment
-            print(self.environment.values)
             for statement in statements:
                 self.execute(statement)
         finally:
@@ -139,10 +140,10 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
             arguments.append(self.evaluate(argument))
         if not isinstance(callee, JSCallable):
             raise RuntimeErrorException(expr.paren, "Can only call functions and classes.")
-        function = cast(JSCallable, callee)
-        if len(arguments) != function.arity():
-            raise RuntimeErrorException(expr.paren, f"Expected {function.arity()} arguments but got {len(arguments)}.")
-        return function.call(self, arguments)
+
+        if len(arguments) != callee.arity():
+            raise RuntimeErrorException(expr.paren, f"Expected {callee.arity()} arguments but got {len(arguments)}.")
+        return callee.call(self, arguments)
 
     def visit_print_stmt(self, stmt: Stmt.Print):
         value = self.evaluate(stmt.expression)
@@ -167,13 +168,23 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
             self.execute(stmt.body)
         return None
 
+    def look_up_variable(self, name: Token, expr: Expr.Expr):
+        distance = self.locals.get(expr)
+        if distance is not None:
+            return self.environment.get_at(distance, name.lexeme)
+        else:
+            return self._globals.get(name)
+
     def visit_variable_expr(self, expr: Expr.Variable):
-        return self.environment.get(expr.name)
+        return self.look_up_variable(expr.name, expr)
 
     def visit_assign_expr(self, expr: Expr.Assign):
         value = self.evaluate(expr.value)
-        print("name", expr.name.lexeme)
-        self.environment.assign(expr.name, value)
+        distance = self.locals.get(expr)
+        if distance is not None:
+            self.environment.assign_at(distance, expr.name, value)
+        else:
+            self._globals.assign(expr.name, value)
         return value
 
     def visit_expression_stmt(self, stmt: Stmt.Expression):
