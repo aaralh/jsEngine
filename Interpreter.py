@@ -9,7 +9,7 @@ from JSFunction import JSFunction
 from JSClass import JSClass, JSInstance
 from Return import Return
 
-class Log(JSCallable):
+class Log(JSFunction):
     def call(self, interpreter, arguments):
         for argument in arguments:
             print(interpreter.stringify(argument))
@@ -24,9 +24,9 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
     def __init__(self):
         self.environment = self._globals
         self.locals: Dict[Expr.Expr, int] = {}
-        self.environment.define("console", {
-            "log": Log()
-        })
+        console = JSClass("Console", {}).call(self, [])
+        console.set(Token(TokenType.IDENTIFIER, "log", 0, 0),  Log(Stmt.Function(Token(TokenType.IDENTIFIER, "log", None, 1), [], []), self.environment, False))
+        self.environment.define("console", console)
 
     def visit_literal_expr(self, expr: Expr.Literal):
         return expr.value
