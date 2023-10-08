@@ -47,12 +47,14 @@ class TokenType(Enum):
     TRUE = auto()
     VAR = auto()
     WHILE = auto()
+    EXTENDS = auto()
 
     EOF = auto()
 
 KEYWORDS = {
     "class": TokenType.CLASS,
     "else": TokenType.ELSE,
+    "extends": TokenType.EXTENDS,
     "false": TokenType.FALSE,
     "for": TokenType.FOR,
     "function": TokenType.FUNCTION,

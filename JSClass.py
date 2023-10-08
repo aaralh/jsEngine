@@ -30,10 +30,12 @@ class JSInstance:
 class JSClass(JSCallable):
     name: str
     methods: Dict[str, JSFunction]
+    superclass: Optional["JSClass"]
 
-    def __init__(self, name: str, methods: Dict[str, JSFunction]):
+    def __init__(self, name: str, superclass: Optional["JSClass"], methods: Dict[str, JSFunction]):
         self.name = name
         self.methods = methods
+        self.superclass = superclass
 
     def __str__(self):
         return self.name
@@ -54,6 +56,9 @@ class JSClass(JSCallable):
     def find_method(self, name: str) -> Optional[JSFunction]:
         if name in self.methods:
             return self.methods[name]
+
+        if self.superclass is not None:
+            return self.superclass.find_method(name)
 
         return None
 
