@@ -8,6 +8,9 @@ class Visitor:
     def visit_block_stmt(self, stmt):
         pass
 
+    def visit_class_stmt(self, stmt):
+        pass
+
     def visit_expression_stmt(self, stmt):
         pass
 
@@ -35,6 +38,15 @@ class Block(Stmt):
 
     def accept(self, visitor):
         return visitor.visit_block_stmt(self)
+
+class Class(Stmt):
+    def __init__(self, name, superclass, methods, ):
+        self.name = name
+        self.superclass = superclass
+        self.methods = methods
+
+    def accept(self, visitor):
+        return visitor.visit_class_stmt(self)
 
 class Expression(Stmt):
     def __init__(self, expression, ):

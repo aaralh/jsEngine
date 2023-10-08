@@ -6,6 +6,7 @@ from RuntimeErrorException import RuntimeErrorException
 from Environment import Environment
 from JSCallable import JSCallable
 from JSFunction import JSFunction
+from JSClass import JSClass, JSInstance
 from Return import Return
 
 class Log(JSCallable):
@@ -40,6 +41,17 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
                 return left
         return self.evaluate(expr.right)
 
+    def visit_set_expr(self, expr: Expr.Set):
+        object = self.evaluate(expr.object)
+        if not isinstance(object, JSInstance):
+            raise RuntimeErrorException(expr.name, "Only instances have fields.")
+        value = self.evaluate(expr.value)
+        object.set(expr.name, value)
+        return value
+
+    def visit_this_expr(self, expr: Expr.This):
+        return self.look_up_variable(expr.keyword, expr)
+
     def evaluate(self, expr: Expr.Expr):
         return expr.accept(self)
 
@@ -60,6 +72,16 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
     def visit_block_stmt(self, stmt: Stmt.Block):
         self.execute_block(stmt.statements, Environment(self.environment))
+        return None
+
+    def visit_class_stmt(self, stmt: Stmt.Class):
+        self.environment.define(stmt.name.lexeme, None)
+        methods = {}
+        for method in stmt.methods:
+            function = JSFunction(method, self.environment, method.name.lexeme == "constructor")
+            methods[method.name.lexeme] = function
+        klass = JSClass(stmt.name.lexeme, methods)
+        self.environment.assign(stmt.name, klass)
         return None
 
     def is_truthy(self, obj):
@@ -143,7 +165,15 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
 
         if len(arguments) != callee.arity():
             raise RuntimeErrorException(expr.paren, f"Expected {callee.arity()} arguments but got {len(arguments)}.")
+        if isinstance(callee, JSClass) and not expr.has_new_keyword:
+            raise RuntimeErrorException(expr.paren, "Cannot call a class like a function. Use 'new' keyword to initialize new instance.")
         return callee.call(self, arguments)
+
+    def visit_get_expr(self, expr: Expr.Get):
+        obj = self.evaluate(expr.object)
+        if isinstance(obj, JSInstance):
+            return obj.get(expr.name)
+        raise RuntimeErrorException(expr.name, "Only instances have properties.")
 
     def visit_print_stmt(self, stmt: Stmt.Print):
         value = self.evaluate(stmt.expression)

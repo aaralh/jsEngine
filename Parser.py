@@ -54,6 +54,9 @@ class Parser:
         if self.match(TokenType.NUMBER, TokenType.STRING):
             return Expr.Literal(self.previous().literal)
 
+        if self.match(TokenType.THIS):
+            return Expr.This(self.previous())
+
         if (self.match(TokenType.IDENTIFIER)):
             return Expr.Variable(self.previous())
 
@@ -72,7 +75,7 @@ class Parser:
 
         return self.call()
 
-    def finish_call(self, callee: Expr.Expr) -> Expr.Expr:
+    def finish_call(self, callee: Expr.Expr, has_new_keyword: bool) -> Expr.Expr:
         arguments: List[Expr.Expr] = []
 
         if not self.check(TokenType.RIGHT_PAREN):
@@ -84,14 +87,18 @@ class Parser:
 
         paren: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
 
-        return Expr.Call(callee, paren, arguments)
+        return Expr.Call(callee, paren, arguments, has_new_keyword)
 
     def call(self) -> Expr.Expr:
+        has_new_keyword = self.match(TokenType.NEW)
         expr: Expr.Expr = self.primary()
 
         while True:
             if self.match(TokenType.LEFT_PAREN):
-                expr = self.finish_call(expr)
+                expr = self.finish_call(expr, has_new_keyword)
+            elif self.match(TokenType.DOT):
+                name: Token = self.consume(TokenType.IDENTIFIER, "Expect property name after '.'.")
+                expr = Expr.Get(expr, name)
             else:
                 break
 
@@ -183,6 +190,10 @@ class Parser:
             if isinstance(expr, Expr.Variable):
                 name: Token = expr.name
                 return Expr.Assign(name, value)
+
+            elif isinstance(expr, Expr.Get):
+                get: Expr.Get = expr
+                return Expr.Set(get.object, get.name, value)
 
             self.error(equals, "Invalid assignment target.")
 
@@ -309,6 +320,8 @@ class Parser:
 
     def declaration(self) -> Optional[Stmt.Stmt]:
         try:
+            if self.match(TokenType.CLASS):
+                return self.class_declaration()
             if self.match(TokenType.FUNCTION):
                 return self.function("function")
             if self.match(TokenType.VAR):
@@ -318,6 +331,24 @@ class Parser:
         except Parser.ParseError:
             self.synchronize()
             return None
+
+    def class_declaration(self) -> Stmt.Stmt:
+        name: Token = self.consume(TokenType.IDENTIFIER, "Expect class name.")
+
+        superclass: Optional[Expr.Variable] = None
+        if self.match(TokenType.LESS):
+            self.consume(TokenType.IDENTIFIER, "Expect superclass name.")
+            superclass = Expr.Variable(self.previous())
+
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.")
+
+        methods: List[Stmt.Function] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            methods.append(self.function("method"))
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
+
+        return Stmt.Class(name, superclass, methods)
 
     def error(self, token: Token, message: str) -> ParseError:
         from JavaScript import JavaScript

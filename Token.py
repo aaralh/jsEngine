@@ -32,6 +32,7 @@ class TokenType(Enum):
     # Keywords.
     AND = auto()
     CLASS = auto()
+    NEW = auto()
     ELSE = auto()
     FALSE = auto()
     FUNCTION = auto()
@@ -56,6 +57,7 @@ KEYWORDS = {
     "for": TokenType.FOR,
     "function": TokenType.FUNCTION,
     "if": TokenType.IF,
+    "new": TokenType.NEW,
     "null": TokenType.NULL,
     "print": TokenType.PRINT,
     "return": TokenType.RETURN,

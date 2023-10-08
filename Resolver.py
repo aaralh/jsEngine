@@ -9,9 +9,17 @@ from enum import Enum, auto
 class FunctionType(Enum):
     NONE = auto()
     FUNCTION = auto()
+    METHOD = auto()
+    CONSTRUCTOR = auto()
+
+class ClassType(Enum):
+    NONE = auto()
+    CLASS = auto()
 
 
 class Resolver(Stmt.Visitor, Expr.Visitor):
+
+    current_class = ClassType.NONE
 
     def __init__(self, interpreter):
         self.interpreter = interpreter
@@ -75,6 +83,25 @@ class Resolver(Stmt.Visitor, Expr.Visitor):
         self.resolve(stmt.statements)
         self.end_scope()
 
+    def visit_class_stmt(self, stmt):
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
+        self.declare(stmt.name)
+        self.define(stmt.name)
+
+        self.begin_scope()
+        self.scopes[-1]["this"] = True
+
+        for method in stmt.methods:
+            declaration = FunctionType.METHOD
+            if method.name.lexeme == "constructor":
+                declaration = FunctionType.CONSTRUCTOR
+            self.resolve_function(method, declaration)
+
+        self.end_scope()
+        self.current_class = enclosing_class
+
     def visit_var_stmt(self, stmt):
         self.declare(stmt.name)
         if stmt.initializer is not None:
@@ -113,6 +140,9 @@ class Resolver(Stmt.Visitor, Expr.Visitor):
             raise RuntimeErrorException(stmt.keyword, "Cannot return from top-level code.")
 
         if stmt.value is not None:
+            if self.current_function == FunctionType.CONSTRUCTOR:
+                # TODO: Return always instance of class.
+                raise RuntimeErrorException(stmt.keyword, "Cannot return a value from a constructor.")
             self.resolve_expr(stmt.value)
 
     def visit_while_stmt(self, stmt):
@@ -128,6 +158,9 @@ class Resolver(Stmt.Visitor, Expr.Visitor):
         for argument in expr.arguments:
             self.resolve_expr(argument)
 
+    def visit_get_expr(self, expr):
+        self.resolve_expr(expr.object)
+
     def visit_grouping_expr(self, expr):
         self.resolve_expr(expr.expression)
 
@@ -137,6 +170,15 @@ class Resolver(Stmt.Visitor, Expr.Visitor):
     def visit_logical_expr(self, expr):
         self.resolve_expr(expr.left)
         self.resolve_expr(expr.right)
+
+    def visit_set_expr(self, expr):
+        self.resolve_expr(expr.value)
+        self.resolve_expr(expr.object)
+
+    def visit_this_expr(self, expr):
+        if self.current_class== ClassType.NONE:
+            raise RuntimeErrorException(expr.keyword, "Cannot use 'this' outside of a class.")
+        self.resolve_local(expr, expr.keyword)
 
     def visit_unary_expr(self, expr):
         self.resolve_expr(expr.right)
