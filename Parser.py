@@ -56,14 +56,27 @@ class Parser:
 
         if self.match(TokenType.SUPER):
             keyword: Token = self.previous()
-            self.consume(TokenType.DOT, "Expect '.' after 'super'.")
-            method: Token = self.consume(TokenType.IDENTIFIER, "Expect superclass method name.")
-            return Expr.Super(keyword, method)
+            if self.match(TokenType.LEFT_PAREN):
+                arguments = []
+                if not self.check(TokenType.RIGHT_PAREN):
+                    arguments.append(self.expression())
+                    while self.match(TokenType.COMMA):
+                        if len(arguments) >= 255:
+                            self.error(self.peek(), "Can't have more than 255 arguments.")
+                        arguments.append(self.expression())
+                paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+                method_name = Token(TokenType.IDENTIFIER, "constructor", None, keyword.line)
+                return Expr.Call(Expr.Super(keyword, method_name), paren, arguments, False)
+                #return Expr.Super(keyword, method_name)
+            else:
+                self.consume(TokenType.DOT, "Expect '.' after 'super'.")
+                method = self.consume(TokenType.IDENTIFIER, "Expect superclass method name.")
+                return Expr.Super(keyword, method)
 
         if self.match(TokenType.THIS):
             return Expr.This(self.previous())
 
-        if (self.match(TokenType.IDENTIFIER)):
+        if self.match(TokenType.IDENTIFIER):
             return Expr.Variable(self.previous())
 
         if self.match(TokenType.LEFT_PAREN):

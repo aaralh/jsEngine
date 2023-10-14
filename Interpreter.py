@@ -246,7 +246,7 @@ class Interpreter(Expr.Visitor, Stmt.Visitor):
         return None
 
     def visit_function_stmt(self, stmt: Stmt.Function):
-        function = JSFunction(stmt, self.environment)
+        function = JSFunction(stmt, self.environment, stmt.name.lexeme == "constructor")
         self.environment.define(stmt.name.lexeme, function)
         return None
 
