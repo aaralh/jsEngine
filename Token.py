@@ -13,6 +13,7 @@ class TokenType(Enum):
     SEMICOLON = auto()
     SLASH = auto()
     STAR = auto()
+    MODULO = auto()
 
     # One or two character tokens.
     BANG = auto()

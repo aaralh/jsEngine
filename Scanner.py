@@ -99,6 +99,8 @@ class Scanner():
             self.add_token(TokenType.SEMICOLON)
         elif c == "*":
             self.add_token(TokenType.STAR)
+        elif c == "%":
+            self.add_token(TokenType.MODULO)
         elif c == "!":
             self.add_token(TokenType.BANG_EQUAL if self.match("=") else TokenType.BANG)
         elif c == "=":
